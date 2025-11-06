@@ -91,7 +91,7 @@ defmodule Explorer.Mixfile do
       {:libcluster, "~> 3.5"},
       {:math, "~> 0.7.0"},
       {:mock, "~> 0.3.0", only: [:test], runtime: false},
-      {:mox, "~> 1.1.0"},
+      {:mox, "~> 1.2.0"},
       {:poison, "~> 5.0.0"},
       {:nimble_csv, "~> 1.1"},
       {:postgrex, ">= 0.0.0"},
