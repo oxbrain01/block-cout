@@ -1352,7 +1352,9 @@ defmodule Explorer.Chain do
         elements
 
       blocks ->
-        blocks |> Repo.preload(Map.keys(necessity_by_association))
+        blocks
+        |> Repo.preload(Map.keys(necessity_by_association))
+        |> Enum.sort_by(& &1.number, {:desc, :natural})
     end
   end
 
@@ -2070,7 +2072,7 @@ defmodule Explorer.Chain do
 
   defp fetch_transactions_for_rap do
     Transaction
-    |> order_by([transaction], desc: transaction.block_number, desc: transaction.index)
+    |> order_by([transaction], desc: transaction.block_number, desc: transaction.index, desc: transaction.inserted_at)
   end
 
   def transactions_available_count do

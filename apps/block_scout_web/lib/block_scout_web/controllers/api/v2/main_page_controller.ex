@@ -46,6 +46,7 @@ defmodule BlockScoutWeb.API.V2.MainPageController do
         :transactions,
         :rewards
       ])
+      |> Enum.sort_by(& &1.number, {:desc, :natural})
 
     conn
     |> put_status(200)
@@ -67,13 +68,48 @@ defmodule BlockScoutWeb.API.V2.MainPageController do
   end
 
   def transactions(conn, _params) do
-    recent_transactions = Chain.recent_collated_transactions(false, @transactions_options)
+    recent_transactions =
+      Chain.recent_collated_transactions(false, @transactions_options)
+      |> Enum.sort(fn a, b ->
+        block_compare = compare_block_numbers(a.block_number, b.block_number)
+
+        case block_compare do
+          :gt -> true
+          :lt -> false
+          :eq ->
+            index_compare = compare_indices(a.index, b.index)
+
+            case index_compare do
+              :gt -> true
+              :lt -> false
+              :eq ->
+                DateTime.compare(
+                  a.inserted_at || ~U[1970-01-01 00:00:00Z],
+                  b.inserted_at || ~U[1970-01-01 00:00:00Z]
+                ) == :gt
+            end
+        end
+      end)
 
     conn
     |> put_status(200)
     |> put_view(TransactionView)
     |> render(:transactions, %{transactions: recent_transactions |> maybe_preload_metadata()})
   end
+
+  defp compare_block_numbers(nil, nil), do: :eq
+  defp compare_block_numbers(nil, _), do: :lt
+  defp compare_block_numbers(_, nil), do: :gt
+  defp compare_block_numbers(a, b) when a > b, do: :gt
+  defp compare_block_numbers(a, b) when a < b, do: :lt
+  defp compare_block_numbers(_, _), do: :eq
+
+  defp compare_indices(nil, nil), do: :eq
+  defp compare_indices(nil, _), do: :lt
+  defp compare_indices(_, nil), do: :gt
+  defp compare_indices(a, b) when a > b, do: :gt
+  defp compare_indices(a, b) when a < b, do: :lt
+  defp compare_indices(_, _), do: :eq
 
   def watchlist_transactions(conn, _params) do
     with {:auth, %{watchlist_id: watchlist_id}} <- {:auth, current_user(conn)} do
